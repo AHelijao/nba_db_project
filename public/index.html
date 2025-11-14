@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NBA Player Stats Search</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="container">
+    <h1>NBA Stats Search</h1>
+
+    <div id="loading-indicator" class="hidden">
+        <p>Loading...</p>
+    </div>
+
+    <div class="search-container">
+        <div class="search-column" id="player-search-column">
+            <h2>Player Search</h2>
+            <div class="search-box">
+                <input type="text" id="player-name-input" placeholder="e.g., Michael Jordan">
+                <button id="search-button">Search Player</button>
+            </div>
+            <div id="results-container"></div>
+        </div>
+        <div class="search-column" id="team-search-column">
+            <h2>Team Search</h2>
+            <div class="search-box">
+                <input type="text" id="team-name-input" placeholder="e.g., Lakers, GSW">
+                <button id="team-search-button">Search Team</button>
+            </div>
+            <div id="team-results-container"></div>
+        </div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
