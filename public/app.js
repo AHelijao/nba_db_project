@@ -7,65 +7,49 @@ document.addEventListener('DOMContentLoaded', () => {
     const teamResultsContainer = document.getElementById('team-results-container');
     const loadingIndicator = document.getElementById('loading-indicator');
 
-    // --- Player Search Logic ---
-    const searchPlayer = async () => {
-        const playerName = playerNameInput.value.trim();
-        if (!playerName) {
-            resultsContainer.innerHTML = '<p style="color: red;">Please enter a player name.</p>';
-            return;
-        }
-
-        // Show loading and clear previous results
-        loadingIndicator.classList.remove('hidden');
-        resultsContainer.innerHTML = ''; // Only clear player results
-
-        try {
-            const response = await fetch(`/api/players/search/${playerName}`);
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Player not found.');
-            }
-
-            const stats = await response.json();
-            displayStats(stats);
-
-        } catch (error) {
-            resultsContainer.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
-        } finally {
-            // Hide loading
-            loadingIndicator.classList.add('hidden');
-        }
-    };
-
-    // --- Team Search Logic ---
-    const searchTeam = async () => {
-        const teamName = teamNameInput.value.trim();
-        if (!teamName) {
-            teamResultsContainer.innerHTML = '<p style="color: red;">Please enter a team name.</p>';
+    /**
+     * A generic function to handle API searches, loading states, and error display.
+     * @param {object} config - The configuration for the search.
+     * @param {HTMLInputElement} config.inputElement - The input field.
+     * @param {HTMLElement} config.container - The container to display results.
+     * @param {string} config.apiEndpoint - The API path to fetch from.
+     * @param {string} config.emptyMessage - The message to show if the input is empty.
+     * @param {function} config.displayFunction - The function to render the results.
+     */
+    const performSearch = async ({ inputElement, container, apiEndpoint, emptyMessage, displayFunction }) => {
+        const query = inputElement.value.trim();
+        if (!query) {
+            container.innerHTML = `<p style="color: red;">${emptyMessage}</p>`;
             return;
         }
 
         loadingIndicator.classList.remove('hidden');
-        teamResultsContainer.innerHTML = ''; // Only clear team results
+        container.innerHTML = '';
 
         try {
-            const response = await fetch(`/api/teams/search/${teamName}`);
-
+            const response = await fetch(`${apiEndpoint}/${query}`);
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Team not found.');
+                // Try to parse error message, but have a fallback
+                let errorMsg = `A server error occurred: ${response.statusText}`;
+                try {
+                    const errorData = await response.json();
+                    errorMsg = errorData.message || `No results found for "${query}".`;
+                } catch (e) {
+                    // The error response wasn't valid JSON, use the status text.
+                }
+                throw new Error(errorMsg);
             }
-
-            const teamData = await response.json();
-            displayTeamTopPlayers(teamData);
-
+            const data = await response.json();
+            displayFunction(data);
         } catch (error) {
-            teamResultsContainer.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            container.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
         } finally {
             loadingIndicator.classList.add('hidden');
         }
     };
+
+    const searchPlayer = () => performSearch({ inputElement: playerNameInput, container: resultsContainer, apiEndpoint: '/api/players/search', emptyMessage: 'Please enter a player name.', displayFunction: displayStats });
+    const searchTeam = () => performSearch({ inputElement: teamNameInput, container: teamResultsContainer, apiEndpoint: '/api/teams/search', emptyMessage: 'Please enter a team name.', displayFunction: displayTeamTopPlayers });
 
     // --- Event Listeners ---
     searchButton.addEventListener('click', searchPlayer);

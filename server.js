@@ -1,11 +1,12 @@
 require('dotenv').config();
 const express = require('express');
-const { MongoClient } = require('mongodb');
+
 const cors = require('cors');
 const path = require('path');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5001;
+const { MongoClient } = require('mongodb');
 
 const url = process.env.MONGO_URI;
 if (!url) {
@@ -14,15 +15,13 @@ if (!url) {
 }
 
 const client = new MongoClient(url);
-const dbName = 'nba_db';
+const dbName = 'nba_db'; // Corrected database name
 
 let db;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-// Serve static files from the "public" directory
-app.use(express.static(path.join(__dirname, 'public')));
 
 /**
  * API endpoint to search for a player and get their career average stats.
@@ -38,7 +37,8 @@ app.get('/api/players/search/:name', async (req, res) => {
     try {
         const playersCollection = db.collection('players');
         const pipeline = [
-            { $match: { player: { $regex: new RegExp(`^${playerName}$`, 'i') } } },
+            // Use a direct match, which will leverage the case-insensitive index
+            { $match: { player: playerName } },
             {
                 $lookup: {
                     from: 'team_names',
@@ -136,6 +136,9 @@ app.get('/api/teams/search/:teamName', async (req, res) => {
     }
 });
 
+// Serve static files from the "public" directory. This should come AFTER the API routes.
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Start the server and connect to the database
 async function startServer() {
     try {
@@ -153,3 +156,10 @@ async function startServer() {
 }
 
 startServer();
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+    await client.close();
+    console.log('MongoDB connection closed.');
+    process.exit(0);
+});
