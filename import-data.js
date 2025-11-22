@@ -10,13 +10,7 @@ if (!url) {
   process.exit(1);
 }
 
-const client = new MongoClient(url, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
-});
+const client = new MongoClient(url);
 
 const dbName = 'nba_db';
 

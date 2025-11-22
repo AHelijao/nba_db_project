@@ -178,6 +178,17 @@ document.addEventListener('DOMContentLoaded', () => {
             playerStats.className = 'top-player-stats';
             playerStats.textContent = `${player.avgPTS.toFixed(2)} PPG in ${player.gamesPlayed} games`;
 
+            // Make the entire player item clickable
+            playerItem.style.cursor = 'pointer';
+            playerItem.addEventListener('click', () => {
+                // Populate the player search input with the clicked player's name
+                playerNameInput.value = player._id;
+                // Trigger the player search
+                searchPlayer();
+                // Scroll to the player search section for better UX
+                document.getElementById('player-search-column').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            });
+
             playerItem.append(playerImage, playerName, playerStats);
             playerList.appendChild(playerItem);
         });
