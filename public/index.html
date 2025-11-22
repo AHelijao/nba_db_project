@@ -1,39 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NBA Player Stats Search</title>
+    <title>NBA Stats | Pro Database</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Montserrat:wght@600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
-<div class="container">
-    <h1>NBA Stats Search</h1>
+    <div class="background-mesh"></div>
 
-    <div id="loading-indicator" class="hidden">
-        <p>Loading...</p>
-    </div>
-
-    <div class="search-container">
-        <div class="search-column" id="player-search-column">
-            <h2>Player Search</h2>
-            <div class="search-box">
-                <input type="text" id="player-name-input" placeholder="e.g., Michael Jordan">
-                <button id="search-button">Search Player</button>
+    <main class="glass-container">
+        <header class="app-header">
+            <div class="logo-area">
+                <span class="logo-icon">🏀</span>
+                <h1>NBA <span class="highlight">Stats</span> DB</h1>
             </div>
-            <div id="results-container"></div>
-        </div>
-        <div class="search-column" id="team-search-column">
-            <h2>Team Search</h2>
-            <div class="search-box">
-                <input type="text" id="team-name-input" placeholder="e.g., Lakers, GSW">
-                <button id="team-search-button">Search Team</button>
-            </div>
-            <div id="team-results-container"></div>
-        </div>
-    </div>
-</div>
+            <p class="subtitle">Advanced Player & Team Analytics</p>
+        </header>
 
-<script src="app.js"></script>
+        <div id="loading-indicator" class="loader-container hidden">
+            <div class="spinner"></div>
+            <p>Fetching Data...</p>
+        </div>
+
+        <div class="search-grid">
+            <!-- Player Search Section -->
+            <section class="search-card" id="player-search-column">
+                <div class="card-header">
+                    <h2>Player Lookup</h2>
+                    <p>Find career stats and bio</p>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="player-name-input" placeholder=" " autocomplete="off">
+                    <label for="player-name-input">Player Name (e.g. Michael Jordan)</label>
+                    <button id="search-button" class="action-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div id="results-container" class="results-area"></div>
+            </section>
+
+            <!-- Team Search Section -->
+            <section class="search-card" id="team-search-column">
+                <div class="card-header">
+                    <h2>Team Lookup</h2>
+                    <p>Explore rosters and details</p>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="team-name-input" placeholder=" " autocomplete="off">
+                    <label for="team-name-input">Team Name (e.g. Lakers)</label>
+                    <button id="team-search-button" class="action-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div id="team-results-container" class="results-area"></div>
+            </section>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
 </body>
+
 </html>
