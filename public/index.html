@@ -30,6 +30,26 @@
             <p>Fetching Data...</p>
         </div>
 
+        <!-- Team Rivalry Section -->
+        <section class="rivalry-section" id="team-rivalry-section" style="margin-bottom: 3rem;">
+            <div class="section-header">
+                <h2>Team Rivalry Clash</h2>
+                <p>Head-to-Head History</p>
+            </div>
+            <div class="rivalry-controls">
+                <div class="input-group">
+                    <input type="text" id="rivalry-team1-input" placeholder=" " required>
+                    <label>Team 1 (e.g. Lakers)</label>
+                </div>
+                <button id="rivalry-search-button" class="vs-btn">VS</button>
+                <div class="input-group">
+                    <input type="text" id="rivalry-team2-input" placeholder=" " required>
+                    <label>Team 2 (e.g. Celtics)</label>
+                </div>
+            </div>
+            <div id="rivalry-results-container" class="rivalry-results"></div>
+        </section>
+
         <div class="search-grid">
             <!-- Player Search Section -->
             <section class="search-card" id="player-search-column">

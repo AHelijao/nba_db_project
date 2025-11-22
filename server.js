@@ -37,8 +37,8 @@ app.get('/api/players/search/:name', async (req, res) => {
     try {
         const playersCollection = db.collection('players');
         const pipeline = [
-            // Use a direct match, which will leverage the case-insensitive index
-            { $match: { player: playerName } },
+            // Use regex for partial match and case-insensitivity
+            { $match: { player: { $regex: playerName, $options: 'i' } } },
             {
                 $lookup: {
                     from: 'team_names',
@@ -65,21 +65,24 @@ app.get('/api/players/search/:name', async (req, res) => {
                     avg3P_PCT: { $avg: { $ifNull: ['$3P_PCT', 0] } },
                     avgFT_PCT: { $avg: { $ifNull: ['$FT_PCT', 0] } },
                 }
-            }
+            },
+            // Sort by games played to return the most prominent player first (e.g. "James" -> LeBron)
+            { $sort: { gamesPlayed: -1 } }
         ];
 
-        const result = await playersCollection.aggregate(pipeline).toArray();
+        // Add collation for accent insensitivity (strength: 1 ignores case and diacritics)
+        const result = await playersCollection.aggregate(pipeline, { collation: { locale: 'en', strength: 1 } }).toArray();
 
         if (result.length > 0) {
             res.json(result[0]);
         } else {
-            res.status(404).json({ message: `Player "${playerName}" not found.` });
+            res.status(404).json({ message: `Team "${playerName}" not found.` });
         }
     } catch (err) {
-        console.error('API Error:', err);
-        res.status(500).json({ error: 'An error occurred during the search.' });
+        res.status(500).json({ message: err.message });
     }
 });
+
 
 // --- New Endpoint: Search for a team and its top players ---
 app.get('/api/teams/search/:teamName', async (req, res) => {
@@ -133,6 +136,95 @@ app.get('/api/teams/search/:teamName', async (req, res) => {
     } catch (error) {
         console.error('Error searching for team:', error);
         res.status(500).json({ message: 'Error searching for team.' });
+    }
+});
+
+// --- New Endpoint: Head-to-Head Matchup ---
+app.get('/api/matchup/:team1/:team2', async (req, res) => {
+    const { team1, team2 } = req.params;
+
+    if (!db) {
+        return res.status(500).json({ error: 'Database not connected' });
+    }
+
+    try {
+        // Helper function to resolve team name/abbr to abbreviation
+        const resolveTeam = async (input) => {
+            const doc = await db.collection('team_names').findOne({
+                $or: [
+                    { abbreviation: { $regex: `^${input}$`, $options: 'i' } },
+                    { name: { $regex: input, $options: 'i' } }
+                ]
+            });
+            return doc ? doc : null;
+        };
+
+        const t1Doc = await resolveTeam(team1);
+        const t2Doc = await resolveTeam(team2);
+
+        if (!t1Doc || !t2Doc) {
+            return res.status(404).json({ message: 'One or both teams not found.' });
+        }
+
+        const t1Abbr = t1Doc.abbreviation;
+        const t2Abbr = t2Doc.abbreviation;
+
+        // 1. Calculate Win/Loss Record
+        // We query the 'teams' collection (which contains team stats per game)
+        // We look for games where the team is t1Abbr and the opponent is t2Abbr
+        const games = await db.collection('teams').find({
+            team: t1Abbr,
+            $or: [{ home: t2Abbr }, { away: t2Abbr }]
+        }).toArray();
+
+        let t1Wins = 0;
+        let t2Wins = 0;
+
+        games.forEach(game => {
+            if (game.win) {
+                t1Wins++;
+            } else {
+                t2Wins++;
+            }
+        });
+
+        // 2. Find Top 5 Players for each team in this matchup
+        const getTopPlayers = async (teamAbbr, opponentAbbr) => {
+            return await db.collection('players').aggregate([
+                {
+                    $match: {
+                        team: teamAbbr,
+                        $or: [{ home: opponentAbbr }, { away: opponentAbbr }]
+                    }
+                },
+                {
+                    $group: {
+                        _id: '$player',
+                        playerId: { $first: '$playerId' },
+                        avgPTS: { $avg: '$PTS' },
+                        gamesPlayed: { $sum: 1 }
+                    }
+                },
+                { $sort: { avgPTS: -1 } },
+                { $limit: 5 }
+            ]).toArray();
+        };
+
+        const [t1Players, t2Players] = await Promise.all([
+            getTopPlayers(t1Abbr, t2Abbr),
+            getTopPlayers(t2Abbr, t1Abbr)
+        ]);
+
+        res.json({
+            team1: { ...t1Doc, wins: t1Wins },
+            team2: { ...t2Doc, wins: t2Wins },
+            team1TopPlayers: t1Players,
+            team2TopPlayers: t2Players
+        });
+
+    } catch (error) {
+        console.error('Matchup API Error:', error);
+        res.status(500).json({ error: 'An error occurred during the matchup search.' });
     }
 });
 

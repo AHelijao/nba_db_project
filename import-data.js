@@ -63,7 +63,7 @@ function transformPlayerData(data) {
     team: data.team,
     home: data.home,
     away: data.away,
-    win: data.win.toLowerCase() === 'true',
+    win: (data.win && (data.win === '1.0' || data.win.toLowerCase() === 'true')) || false,
     season: data.season,
     // Rename fields with special characters and convert to numbers
     FG_PCT: parseFloat(data['FG%']) || 0,

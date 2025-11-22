@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
         } finally {
             loadingIndicator.classList.add('hidden');
+            showLoading(false);
         }
     };
 
@@ -182,5 +183,84 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         teamResultsContainer.appendChild(playerList);
+    }
+    // --- Rivalry Feature ---
+    const rivalryTeam1Input = document.getElementById('rivalry-team1-input');
+    const rivalryTeam2Input = document.getElementById('rivalry-team2-input');
+    const rivalrySearchButton = document.getElementById('rivalry-search-button');
+    const rivalryResultsContainer = document.getElementById('rivalry-results-container');
+
+    const searchMatchup = async () => {
+        const t1 = rivalryTeam1Input.value.trim();
+        const t2 = rivalryTeam2Input.value.trim();
+
+        if (!t1 || !t2) {
+            alert('Please enter both team names.');
+            return;
+        }
+
+        loadingIndicator.classList.remove('hidden');
+        rivalryResultsContainer.classList.add('hidden');
+        rivalryResultsContainer.innerHTML = '';
+
+        try {
+            const response = await fetch(`/api/matchup/${t1}/${t2}`);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Matchup not found.');
+            }
+            const data = await response.json();
+            displayMatchup(data);
+        } catch (error) {
+            alert(error.message);
+        } finally {
+            loadingIndicator.classList.add('hidden');
+        }
+    };
+
+    rivalrySearchButton.addEventListener('click', searchMatchup);
+
+    function displayMatchup(data) {
+        rivalryResultsContainer.classList.remove('hidden');
+        rivalryResultsContainer.innerHTML = `
+            <div class="matchup-banner">
+                <div class="score-board">
+                    <div class="team-score">
+                        <h3>${data.team1.wins}</h3>
+                        <span>${data.team1.abbreviation}</span>
+                    </div>
+                    <div class="score-divider">-</div>
+                    <div class="team-score">
+                        <h3>${data.team2.wins}</h3>
+                        <span>${data.team2.abbreviation}</span>
+                    </div>
+                </div>
+                
+                <div class="top-performers-grid">
+                    <div class="team-column">
+                        <h4>Top ${data.team1.name} Performers</h4>
+                        ${data.team1TopPlayers.map(p => createMiniPlayer(p)).join('')}
+                    </div>
+                    <div class="team-column">
+                        <h4>Top ${data.team2.name} Performers</h4>
+                        ${data.team2TopPlayers.map(p => createMiniPlayer(p)).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function createMiniPlayer(player) {
+        return `
+            <div class="mini-player-item">
+                <img src="https://cdn.nba.com/headshots/nba/latest/1040x760/${player.playerId}.png" 
+                     class="mini-player-img" 
+                     onerror="this.src='https://cdn.nba.com/headshots/nba/latest/1040x760/fallback.png'">
+                <div class="mini-player-info">
+                    <div>${player._id}</div>
+                </div>
+                <div class="mini-player-stat">${player.avgPTS.toFixed(1)} PPG</div>
+            </div>
+        `;
     }
 });
