@@ -1,6 +1,6 @@
 # NBA Stats Pro Database
 
-A modern, full-stack web application for exploring NBA player careers and team histories. Built with **Node.js**, **Express**, and **MongoDB**, featuring a premium dark-mode UI.
+A modern, full-stack web application for exploring NBA player careers, team histories, and head-to-head matchups. Built with **Node.js**, **Express**, and **MongoDB**, featuring a premium dark-mode UI.
 
 ![Project Banner](https://via.placeholder.com/1200x400/0f172a/3b82f6?text=NBA+Stats+Pro+Database)
 
@@ -8,8 +8,9 @@ A modern, full-stack web application for exploring NBA player careers and team h
 
 -   **Player Search**: Instant access to career averages (Points, Rebounds, Assists, etc.) and team history.
 -   **Team Deep Dive**: Discover top 10 all-time scorers for any NBA franchise.
+-   **Head-to-Head Rivalry**: Compare two teams' historical win/loss records and find top performers in those matchups.
 -   **Smart Search**: Handles team abbreviations (e.g., "LAL" -> "Lakers") and case-insensitive queries.
--   **Dynamic Visuals**: Automatically fetches high-res player headshots from the NBA CDN.
+-   **Dynamic Visuals**: Automatically fetches high-res player headshots and team logos.
 -   **Modern UI**: Glassmorphism design, responsive grid layout, and smooth animations.
 
 ## Tech Stack
@@ -69,6 +70,111 @@ A modern, full-stack web application for exploring NBA player careers and team h
 1.  Enter a team name or abbreviation (e.g., "Celtics" or "BOS") in the **Team Lookup** box.
 2.  See the top 10 all-time leading scorers for that franchise.
 
+### Head-to-Head Matchup
+1.  Enter two team names (e.g., "Lakers" vs "Celtics") in the **Rivalry** section.
+2.  View the historical win/loss record and top 5 scorers for each team in those specific games.
+
+---
+
+## Architecture & Data Flow
+
+### 1. Database Infrastructure
+-   **Database System**: MongoDB Atlas (Cloud-hosted NoSQL Database).
+-   **Cluster Configuration**: Single-node cluster (M0 Sandbox/Shared).
+-   **Connection**: Managed via Node.js `mongodb` driver using a secure connection string (`MONGO_URI`) stored in `.env`.
+
+### 2. Data Ingestion Pipeline
+The project uses a custom script (`import-data.js`) to seed the database from raw CSV files located in `nba_dataset/`.
+
+-   **Parsing**: Uses `csv-parser` to stream and read raw CSV files.
+-   **Transformation**: Converts string fields to appropriate types (Integers, Floats, Dates) and renames special characters (e.g., `FG%` -> `FG_PCT`).
+-   **Loading**: Clears existing collections to prevent duplicates and inserts transformed documents in bulk.
+
+### 3. API & Backend Logic
+The backend (`server.js`) serves as an interface between the frontend and the MongoDB cluster.
+
+#### `GET /api/players/search/:name`
+-   **Purpose**: Retrieves career average stats for a specific player.
+-   **NoSQL Logic**:
+    1.  **`$match`**: Filters documents where the `player` field matches the search name (case-insensitive regex).
+    2.  **`$lookup`**: Joins with `team_names` to find full team names.
+    3.  **`$unwind`**: Deconstructs the joined team details.
+    4.  **`$group`**: Groups by player to calculate career averages (`$avg`) and unique teams (`$addToSet`).
+    5.  **`$sort`**: Orders by `gamesPlayed` descending.
+
+#### `GET /api/teams/search/:teamName`
+-   **Purpose**: Finds a team and lists its top 10 all-time players.
+-   **NoSQL Logic**:
+    1.  **Team Resolution**: Finds the team abbreviation from `team_names`.
+    2.  **Top Player Aggregation**: Filters `players` by team abbreviation, groups by player to calculate average points, sorts by descending points, and limits to top 10.
+
+#### `GET /api/matchup/:team1/:team2`
+-   **Purpose**: Calculates historical win/loss record and top scorers for a matchup.
+-   **NoSQL Logic**:
+    1.  **Win/Loss**: Queries `teams` collection for games between the two teams and counts wins.
+    2.  **Top Performers**: Aggregates `players` collection for games between the two teams, groups by player, and finds top 5 scorers.
+
+### 4. Frontend Integration
+-   **Data Fetching**: The frontend (`app.js`) calls API endpoints asynchronously.
+-   **Headshots**: Player images are fetched dynamically from the NBA's public CDN using the `playerId`.
+
+---
+
+## MongoDB Reference
+
+### Shell Commands
+
+**Find Player Career Averages**
+```javascript
+db.getCollection('players').aggregate([
+    { $match: { player: { $regex: "LeBron James", $options: 'i' } } },
+    { $lookup: { from: 'team_names', localField: 'team', foreignField: 'abbreviation', as: 'teamDetails' } },
+    { $unwind: '$teamDetails' },
+    { $group: {
+        _id: '$player',
+        playerId: { $first: '$playerId' },
+        teams: { $addToSet: '$teamDetails.name' },
+        gamesPlayed: { $sum: 1 },
+        avgPTS: { $avg: '$PTS' }
+    }},
+    { $sort: { gamesPlayed: -1 } }
+])
+```
+
+**Find Team's Top 10 Players**
+```javascript
+// 1. Find team abbreviations (e.g., LAL)
+// 2. Find top players
+db.getCollection('players').aggregate([
+    { $match: { team: { $in: ["LAL"] } } },
+    { $group: { _id: '$player', avgPTS: { $avg: '$PTS' } } },
+    { $sort: { avgPTS: -1 } },
+    { $limit: 10 }
+])
+```
+
+### SQL Equivalent Queries (Conceptual)
+
+**Find Player Career Averages**
+```sql
+SELECT p.player, COUNT(p.gameId) AS gamesPlayed, AVG(p.PTS) AS avgPTS
+FROM players p
+JOIN team_names tn ON p.team = tn.abbreviation
+WHERE p.player ILIKE '%LeBron James%'
+GROUP BY p.player
+ORDER BY gamesPlayed DESC;
+```
+
+**Find Team's Top 10 Players**
+```sql
+SELECT player, AVG(PTS) AS avgPTS
+FROM players
+WHERE team = 'LAL'
+GROUP BY player
+ORDER BY avgPTS DESC
+LIMIT 10;
+```
+
 ## Project Structure
 
 ```
@@ -80,9 +186,9 @@ nba_db_project/
 │   └── app.js            # Frontend logic & API calls
 ├── import-data.js        # Database seeding script
 ├── server.js             # Express API & MongoDB logic
-└── database_documentation.md # Detailed architecture docs
+└── README.md             # Project documentation
 ```
 
-## 📄 License
+## License
 
 This project is for educational purposes. Data courtesy of NBA.com.
