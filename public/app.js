@@ -45,7 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
         } finally {
             loadingIndicator.classList.add('hidden');
-            showLoading(false);
         }
     };
 
@@ -151,9 +150,23 @@ document.addEventListener('DOMContentLoaded', () => {
     function displayTeamTopPlayers(teamData) {
         teamResultsContainer.innerHTML = ''; // Clear previous results
 
+        const headerContainer = document.createElement('div');
+        headerContainer.className = 'team-header';
+
+        if (teamData.teamId) {
+            const logo = document.createElement('img');
+            logo.className = 'team-logo';
+            logo.src = `https://cdn.nba.com/logos/nba/${teamData.teamId}/primary/L/logo.svg`;
+            logo.alt = `${teamData.teamName} logo`;
+            logo.onerror = () => { logo.style.display = 'none'; }; // Hide if logo fails to load
+            headerContainer.appendChild(logo);
+        }
+
         const header = document.createElement('h2');
         header.textContent = `Top 10 All-Time Players for ${teamData.teamName}`;
-        teamResultsContainer.appendChild(header);
+        headerContainer.appendChild(header);
+
+        teamResultsContainer.appendChild(headerContainer);
 
         const playerList = document.createElement('div');
         playerList.className = 'top-players-list';
@@ -237,13 +250,13 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="matchup-banner">
                 <div class="score-board">
                     <div class="team-score">
+                        <img src="https://cdn.nba.com/logos/nba/${data.team1.teamId}/primary/L/logo.svg" class="matchup-logo" onerror="this.style.display='none'">
                         <h3>${data.team1.wins}</h3>
-                        <span>${data.team1.abbreviation}</span>
                     </div>
                     <div class="score-divider">-</div>
                     <div class="team-score">
                         <h3>${data.team2.wins}</h3>
-                        <span>${data.team2.abbreviation}</span>
+                        <img src="https://cdn.nba.com/logos/nba/${data.team2.teamId}/primary/L/logo.svg" class="matchup-logo" onerror="this.style.display='none'">
                     </div>
                 </div>
                 

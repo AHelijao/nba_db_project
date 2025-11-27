@@ -105,7 +105,12 @@ app.get('/api/teams/search/:teamName', async (req, res) => {
             return res.status(404).json({ message: 'Team not found.' });
         }
 
+        const teamInfo = teamNameDocs[0];
         const teamAbbreviations = teamNameDocs.map(doc => doc.abbreviation);
+
+        // Fetch teamId from 'teams' collection using the abbreviation
+        const teamIdDoc = await db.collection('teams').findOne({ team: teamInfo.abbreviation }, { projection: { teamId: 1 } });
+        const teamId = teamIdDoc ? teamIdDoc.teamId : null;
 
         // Find the top 10 players for that team based on average points
         const topPlayers = await db.collection('players').aggregate([
@@ -127,7 +132,8 @@ app.get('/api/teams/search/:teamName', async (req, res) => {
         ]).toArray();
 
         const response = {
-            teamName: teamNameDocs[0].name, // Use the first found full name for display
+            teamName: teamInfo.name, // Use the first found full name for display
+            teamId: teamId,   // <-- ADDED teamId (fetched from teams collection)
             players: topPlayers
         };
 
@@ -168,6 +174,13 @@ app.get('/api/matchup/:team1/:team2', async (req, res) => {
 
         const t1Abbr = t1Doc.abbreviation;
         const t2Abbr = t2Doc.abbreviation;
+
+        // Fetch teamIds for logos
+        const t1IdDoc = await db.collection('teams').findOne({ team: t1Abbr }, { projection: { teamId: 1 } });
+        const t2IdDoc = await db.collection('teams').findOne({ team: t2Abbr }, { projection: { teamId: 1 } });
+
+        t1Doc.teamId = t1IdDoc ? t1IdDoc.teamId : null;
+        t2Doc.teamId = t2IdDoc ? t2IdDoc.teamId : null;
 
         // 1. Calculate Win/Loss Record
         // We query the 'teams' collection (which contains team stats per game)
