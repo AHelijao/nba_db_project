@@ -20,6 +20,33 @@ A modern, full-stack web application for exploring NBA player careers, team hist
 -   **Database**: MongoDB Atlas (Aggregation Pipeline for complex analytics).
 -   **Data Processing**: Custom CSV ingestion pipeline (`csv-parser`).
 
+## Setting Up MongoDB Atlas
+
+This project requires a MongoDB database. You can use a free "M0" cluster from MongoDB Atlas.
+
+1.  **Create a Free Cluster:**
+    *   Go to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas/register) and create an account.
+    *   Follow the on-screen instructions to create a new project and build a database.
+    *   Choose the **M0 (Free)** cluster tier, select a cloud provider and region (e.g., AWS, N. Virginia `us-east-1`), and give your cluster a name.
+
+2.  **Create a Database User:**
+    *   In the left-hand menu, go to `Security > Database Access`.
+    *   Click **Add New Database User**.
+    *   Enter a username and password. **Save these credentials**, as you will need them for your connection string.
+
+3.  **Whitelist Your IP Address:**
+    *   In the left-hand menu, go to `Security > Network Access`.
+    *   Click **Add IP Address**.
+    *   Click **Allow Access From Anywhere** (`0.0.0.0/0`). This is the easiest for development but is not recommended for production. For better security, you can click "Add Current IP Address".
+
+4.  **Get Your Connection String:**
+    *   Go back to your cluster's "Overview" page and click the **Connect** button.
+    *   Select **Drivers**.
+    *   Under "View connection string", select **Node.js** and the latest version.
+    *   Copy the connection string. It will look like this:
+        `mongodb+srv://<username>:<password>@yourcluster.mongodb.net/?retryWrites=true&w=majority`
+    *   Replace `<username>` and `<password>` with the credentials you created in Step 2. This is your `MONGO_URI`.
+
 ## Installation & Setup
 
 1.  **Clone the Repository**
@@ -34,7 +61,7 @@ A modern, full-stack web application for exploring NBA player careers, team hist
     ```
 
 3.  **Configure Environment**
-    Create a `.env` file in the root directory:
+    Create a `.env` file in the root directory and add your `MONGO_URI`:
     ```env
     MONGO_URI="your_mongodb_connection_string"
     PORT=5001
